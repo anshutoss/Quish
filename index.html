@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contoso Security Awareness Simulation</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background: #f3f4f6; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .screen { display: none; width: 100%; max-width: 480px; padding: 20px; }
+    .screen.active { display: block; }
+
+    /* ===== SCREEN 1: QR Code ===== */
+    .qr-card {
+      background: white; border-radius: 16px; padding: 32px 24px;
+      text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+    .qr-card h1 { font-size: 22px; color: #1f2937; margin-bottom: 8px; }
+    .qr-card p { color: #6b7280; font-size: 14px; margin-bottom: 24px; }
+    .qr-placeholder {
+      width: 220px; height: 220px; margin: 0 auto 24px;
+      background: #f9fafb; border: 2px dashed #d1d5db; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; flex-direction: column;
+    }
+    .qr-placeholder svg { width: 160px; height: 160px; }
+    .btn {
+      display: inline-block; background: #2563eb; color: white; border: none;
+      padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn:hover { background: #1d4ed8; }
+    .btn-outline { background: transparent; border: 2px solid #2563eb; color: #2563eb; }
+    .btn-outline:hover { background: #eff6ff; }
+
+    /* ===== SCREEN 2: Car Parking Login ===== */
+    .login-card {
+      background: white; border-radius: 16px; padding: 32px 28px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+    .login-header { text-align: center; margin-bottom: 28px; }
+    .login-header .logo {
+      width: 56px; height: 56px; background: #2563eb; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;
+      color: white; font-size: 24px; font-weight: bold;
+    }
+    .login-header h2 { font-size: 20px; color: #111827; }
+    .login-header p { color: #6b7280; font-size: 13px; margin-top: 4px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 6px; }
+    .form-group input {
+      width: 100%; padding: 11px 14px; border: 1px solid #d1d5db; border-radius: 8px;
+      font-size: 15px; outline: none; transition: border 0.2s;
+    }
+    .form-group input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    .login-footer { margin-top: 20px; text-align: center; font-size: 12px; color: #9ca3af; }
+
+    /* ===== SCREEN 3: Device Compliance ===== */
+    .compliance-wrap { max-width: 520px; margin: 0 auto; }
+    .top-bar {
+      background: #0078d4; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0;
+      display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600;
+    }
+    .compliance-card {
+      background: white; border-radius: 0 0 12px 12px; padding: 28px 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .action-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fef2f2; color: #dc2626; font-size: 11px; font-weight: 700;
+      padding: 4px 10px; border-radius: 4px; letter-spacing: 0.5px; margin-bottom: 12px;
+    }
+    .compliance-card h2 { font-size: 20px; color: #111827; margin-bottom: 4px; }
+    .ref { font-size: 12px; color: #6b7280; margin-bottom: 20px; }
+    .info-box {
+      background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 14px 16px;
+      border-radius: 0 8px 8px 0; font-size: 13.5px; color: #1e3a5f; line-height: 1.55;
+      margin-bottom: 24px;
+    }
+    .info-box strong { color: #dc2626; }
+    .step { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+    .step:last-child { border-bottom: none; }
+    .step-left { display: flex; align-items: center; gap: 12px; }
+    .step-icon {
+      width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: bold;
+    }
+    .step-icon.done { background: #22c55e; color: white; }
+    .step-icon.progress { background: #3b82f6; color: white; animation: spin 1.2s linear infinite; }
+    .step-icon.wait { background: #e5e7eb; color: #9ca3af; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .step-status { font-size: 13px; font-weight: 500; }
+    .step-status.done { color: #16a34a; }
+    .step-status.progress { color: #2563eb; }
+    .step-status.wait { color: #9ca3af; }
+
+    /* ===== SCREEN 4: You were phished ===== */
+    .phished-wrap { max-width: 720px; margin: 0 auto; }
+    .phished-header {
+      background: #1e1b4b; color: white; text-align: center; padding: 40px 24px 30px;
+      border-radius: 16px 16px 0 0;
+    }
+    .lock-icon { font-size: 42px; margin-bottom: 12px; }
+    .phished-header h1 { font-size: 26px; color: #f97316; margin-bottom: 10px; }
+    .phished-header p { font-size: 14px; color: #c7d2fe; line-height: 1.5; max-width: 520px; margin: 0 auto; }
+    .what-happened {
+      background: #0f172a; padding: 28px 20px 32px; border-radius: 0 0 16px 16px;
+    }
+    .what-happened h3 {
+      text-align: center; color: #94a3b8; font-size: 12px; letter-spacing: 1.5px;
+      margin-bottom: 20px; text-transform: uppercase;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    .box {
+      background: #1e293b; border-radius: 10px; padding: 16px; color: #e2e8f0; font-size: 13px;
+    }
+    .box-title {
+      display: flex; align-items: center; justify-content: space-between;
+      font-weight: 600; margin-bottom: 12px; color: #f1f5f9;
+    }
+    .box-title span { background: #334155; width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .box .check { color: #22c55e; font-size: 16px; }
+    .kv { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .kv .k { color: #94a3b8; }
+    .kv .v { color: #fbbf24; font-weight: 500; }
+    .kv .v.green { color: #4ade80; }
+    .kv .v.red { color: #f87171; }
+    .real-attack {
+      margin-top: 12px; padding-top: 10px; border-top: 1px solid #334155;
+      font-size: 12px; color: #f87171; line-height: 1.4;
+    }
+    .restart { text-align: center; margin-top: 24px; }
+  </style>
+</head>
+<body>
+
+  <!-- ========== SCREEN 1: QR Code ========== -->
+  <div id="screen1" class="screen active">
+    <div class="qr-card">
+      <h1>🚗 Contoso Car Parking</h1>
+      <p>Scan the QR code below to access the parking portal and reserve your spot.</p>
+      <div class="qr-placeholder">
+        <!-- Simple SVG QR-like pattern -->
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100" height="100" fill="#fff"/>
+          <rect x="5" y="5" width="30" height="30" fill="#000"/>
+          <rect x="10" y="10" width="20" height="20" fill="#fff"/>
+          <rect x="15" y="15" width="10" height="10" fill="#000"/>
+          <rect x="65" y="5" width="30" height="30" fill="#000"/>
+          <rect x="70" y="10" width="20" height="20" fill="#fff"/>
+          <rect x="75" y="15" width="10" height="10" fill="#000"/>
+          <rect x="5" y="65" width="30" height="30" fill="#000"/>
+          <rect x="10" y="70" width="20" height="20" fill="#fff"/>
+          <rect x="15" y="75" width="10" height="10" fill="#000"/>
+          <rect x="40" y="5" width="8" height="8" fill="#000"/>
+          <rect x="50" y="5" width="8" height="8" fill="#000"/>
+          <rect x="40" y="15" width="8" height="8" fill="#000"/>
+          <rect x="55" y="20" width="8" height="8" fill="#000"/>
+          <rect x="40" y="40" width="8" height="8" fill="#000"/>
+          <rect x="50" y="45" width="8" height="8" fill="#000"/>
+          <rect x="60" y="40" width="8" height="8" fill="#000"/>
+          <rect x="70" y="50" width="8" height="8" fill="#000"/>
+          <rect x="80" y="45" width="8" height="8" fill="#000"/>
+          <rect x="45" y="55" width="8" height="8" fill="#000"/>
+          <rect x="55" y="60" width="8" height="8" fill="#000"/>
+          <rect x="65" y="70" width="8" height="8" fill="#000"/>
+          <rect x="75" y="65" width="8" height="8" fill="#000"/>
+          <rect x="85" y="75" width="8" height="8" fill="#000"/>
+          <rect x="40" y="75" width="8" height="8" fill="#000"/>
+          <rect x="50" y="85" width="8" height="8" fill="#000"/>
+          <rect x="60" y="80" width="8" height="8" fill="#000"/>
+          <rect x="80" y="85" width="8" height="8" fill="#000"/>
+        </svg>
+      </div>
+      <p style="font-size:13px;color:#9ca3af;margin-bottom:20px;">Or click the button below to continue</p>
+      <button class="btn" onclick="goTo(2)">Open Parking Portal</button>
+    </div>
+  </div>
+
+  <!-- ========== SCREEN 2: Login for Car Parking ========== -->
+  <div id="screen2" class="screen">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo">C</div>
+        <h2>Contoso Parking Portal</h2>
+        <p>Sign in with your company credentials</p>
+      </div>
+      <form onsubmit="event.preventDefault(); goTo(3);">
+        <div class="form-group">
+          <label>Email / Employee ID</label>
+          <input type="text" placeholder="you@contoso.com" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn" style="width:100%;margin-top:8px;">Sign In & Reserve Spot</button>
+      </form>
+      <div class="login-footer">Secured by Contoso Identity Services</div>
+    </div>
+  </div>
+
+  <!-- ========== SCREEN 3: Device Compliance Verification ========== -->
+  <div id="screen3" class="screen">
+    <div class="compliance-wrap">
+      <div class="top-bar">
+        <span style="font-size:18px;">○</span> Contoso IT Helpdesk
+        <span style="font-size:12px;font-weight:400;opacity:0.85;margin-left:auto;">Identity & Device Compliance</span>
+      </div>
+      <div class="compliance-card">
+        <div class="action-badge">⚠ ACTION REQUIRED</div>
+        <h2>Device Compliance Verification</h2>
+        <div class="ref">Reference: ITS-2026-COMPLIANCE · Issued by IT Security Operations</div>
+
+        <div class="info-box">
+          Your device has been flagged for a mandatory compliance check following recent changes to our endpoint security policy. Verification is starting automatically — please do not close this window. Failure to complete this check within <strong>24 hours</strong> may result in restricted network and application access.
+        </div>
+
+        <div class="step">
+          <div class="step-left">
+            <div class="step-icon done">✓</div>
+            <span>Identity verified</span>
+          </div>
+          <span class="step-status done">Complete</span>
+        </div>
+        <div class="step">
+          <div class="step-left">
+            <div class="step-icon done">✓</div>
+            <span>Network connection established</span>
+          </div>
+          <span class="step-status done">Complete</span>
+        </div>
+        <div class="step">
+          <div class="step-left">
+            <div class="step-icon progress">↻</div>
+            <span>Downloading compliance agent</span>
+          </div>
+          <span class="step-status progress">In progress</span>
+        </div>
+        <div class="step">
+          <div class="step-left">
+            <div class="step-icon wait">4</div>
+            <span>Running compliance check</span>
+          </div>
+          <span class="step-status wait">Waiting</span>
+        </div>
+
+        <div style="text-align:center;margin-top:28px;">
+          <button class="btn" onclick="goTo(4)">Continue (Simulation)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SCREEN 4: You were successfully phished ========== -->
+  <div id="screen4" class="screen">
+    <div class="phished-wrap">
+      <div class="phished-header">
+        <div class="lock-icon">🔓</div>
+        <h1>You were successfully phished</h1>
+        <p>This was a company-authorised quishing simulation. No real harm was done. Below is a full record of what happened — the same actions a real attacker would have taken.</p>
+      </div>
+
+      <div class="what-happened">
+        <h3>What Happened</h3>
+        <div class="grid">
+          <!-- Box 1 -->
+          <div class="box">
+            <div class="box-title">
+              <span>1</span> Context Collected <span class="check">✓</span>
+            </div>
+            <div class="kv"><span class="k">hostname</span><span class="v">your device</span></div>
+            <div class="kv"><span class="k">user</span><span class="v">your account</span></div>
+            <div class="kv"><span class="k">os</span><span class="v">Windows</span></div>
+            <div class="kv"><span class="k">timestamp</span><span class="v">—</span></div>
+            <div class="real-attack">Real attack: Identity and OS used to select targeted payloads or sold on dark web marketplaces.</div>
+          </div>
+
+          <!-- Box 2 -->
+          <div class="box">
+            <div class="box-title">
+              <span>2</span> File Written to Disk <span class="check">✓</span>
+            </div>
+            <div class="kv"><span class="k">path</span><span class="v">%USERPROFILE%\quishing_test.txt</span></div>
+            <div class="kv"><span class="k">content</span><span class="v">marker file</span></div>
+            <div class="kv"><span class="k">access</span><span class="v red">write confirmed</span></div>
+            <div class="kv"><span class="k">rights</span><span class="v">no admin needed</span></div>
+            <div class="real-attack">Real attack: malware or ransomware dropped here. Write access to your profile needs no admin rights.</div>
+          </div>
+
+          <!-- Box 3 -->
+          <div class="box">
+            <div class="box-title">
+              <span>3</span> Beacon Sent to Server <span class="check">✓</span>
+            </div>
+            <div class="kv"><span class="k">method</span><span class="v">POST</span></div>
+            <div class="kv"><span class="k">endpoint</span><span class="v">/track/exec</span></div>
+            <div class="kv"><span class="k">payload</span><span class="v">hostname, user, OS, ts</span></div>
+            <div class="kv"><span class="k">result</span><span class="v green">200 OK</span></div>
+            <div class="real-attack">Real attack: C2 check-in confirming a live target. Attacker knows your machine is active and reachable.</div>
+          </div>
+
+          <!-- Box 4 -->
+          <div class="box">
+            <div class="box-title">
+              <span>4</span> Browser Opened <span class="check">✓</span>
+            </div>
+            <div class="kv"><span class="k">method</span><span class="v">Start-Process</span></div>
+            <div class="kv"><span class="k">target</span><span class="v">/awareness</span></div>
+            <div class="kv"><span class="k">visible</span><span class="v">yes – this page</span></div>
+            <div class="kv"><span class="k">user saw</span><span class="v red">nothing until now</span></div>
+            <div class="real-attack">Real attack: browser silently opened to a credential harvest page or drive-by download site.</div>
+          </div>
+        </div>
+
+        <div class="restart">
+          <button class="btn btn-outline" onclick="goTo(1)" style="color:#c7d2fe;border-color:#6366f1;">Restart Simulation</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function goTo(n) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen' + n).classList.add('active');
+      window.scrollTo(0, 0);
+    }
+  </script>
+</body>
+</html>
